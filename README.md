@@ -51,28 +51,48 @@ Insta360 Camera → .insp file → EC2 Server → MediaSDK → Leveled 360° Pan
 git clone https://github.com/yourusername/insta360-mediasdk-server.git
 cd insta360-mediasdk-server
 
-# Download MediaSDK from Insta360 and extract to:
-# ./libMediaSDK-dev-3.0.1-20250418-amd64/
-
-# Create input/output directories
-mkdir -p input output
+# Create directories
+mkdir -p insp-files panoramas mediasdk
 ```
 
-### 2. Build Container
+### 2. Download MediaSDK
+
+1. **Download** from [Insta360 Developer Portal](https://developer.insta360.com/)
+2. **Extract** the MediaSDK package
+3. **Copy contents** to `./mediasdk/` folder:
+
+```bash
+# Your folder structure should look like:
+./mediasdk/
+├── libMediaSDK-dev_3.0.1-20250418_amd64.deb
+├── libMediaSDK-dev-dbgsym_3.0.1-20250418_amd64.ddeb
+└── example/
+    ├── main.cc
+    ├── common.h
+    └── ...
+```
+
+**⚠️ Important**: The `./mediasdk/` folder must contain the `.deb` files and `example/` directory.
+
+### 3. Add Your .insp Files
+
+```bash
+# Copy your Insta360 camera files to the insp-files directory
+cp /path/to/your/files/*.insp ./insp-files/
+```
+
+### 4. Build Container
 
 ```bash
 docker compose build
 ```
 
-### 3. Convert Your First Image
+### 5. Convert Your First Image
 
 ```bash
-# Upload your .insp file to ./input/
-# Then run conversion:
-
 docker compose run --rm insta360-converter /app/stitcher_demo \
-    -inputs /app/input/your_file.insp \
-    -output /app/output/result.jpg \
+    -inputs /app/insp-files/your_file.insp \
+    -output /app/panoramas/result.jpg \
     -stitch_type template \
     -output_size 2048x1024 \
     -enable_flowstate ON \
@@ -80,11 +100,11 @@ docker compose run --rm insta360-converter /app/stitcher_demo \
     -disable_cuda true
 ```
 
-### 4. Download Results
+### 6. Download Results
 
 ```bash
 # Copy results to local machine
-scp -i your-key.pem "ubuntu@your-ec2-ip:~/mediasdk-server/output/*.jpg" ./
+scp -i your-key.pem "ubuntu@your-ec2-ip:~/mediasdk-server/panoramas/*.jpg" ./
 ```
 
 ## 🎛️ Configuration Options
@@ -117,8 +137,8 @@ scp -i your-key.pem "ubuntu@your-ec2-ip:~/mediasdk-server/output/*.jpg" ./
 ### Basic Conversion
 ```bash
 docker compose run --rm insta360-converter /app/stitcher_demo \
-    -inputs /app/input/image.insp \
-    -output /app/output/basic.jpg \
+    -inputs /app/insp-files/image.insp \
+    -output /app/panoramas/basic.jpg \
     -stitch_type template \
     -output_size 2048x1024 \
     -disable_cuda true
@@ -127,8 +147,8 @@ docker compose run --rm insta360-converter /app/stitcher_demo \
 ### High-Quality Leveled Conversion
 ```bash
 docker compose run --rm insta360-converter /app/stitcher_demo \
-    -inputs /app/input/image.insp \
-    -output /app/output/professional.jpg \
+    -inputs /app/insp-files/image.insp \
+    -output /app/panoramas/professional.jpg \
     -stitch_type dynamicstitch \
     -output_size 4096x2048 \
     -enable_flowstate ON \
@@ -139,11 +159,11 @@ docker compose run --rm insta360-converter /app/stitcher_demo \
 ### Batch Processing
 ```bash
 # Process multiple files
-for file in input/*.insp; do
+for file in insp-files/*.insp; do
     basename=$(basename "$file" .insp)
     docker compose run --rm insta360-converter /app/stitcher_demo \
-        -inputs "/app/input/$basename.insp" \
-        -output "/app/output/$basename.jpg" \
+        -inputs "/app/insp-files/$basename.insp" \
+        -output "/app/panoramas/$basename.jpg" \
         -stitch_type template \
         -output_size 2048x1024 \
         -enable_flowstate ON \
@@ -222,11 +242,34 @@ insta360-mediasdk-server/
 ├── docker-compose.yml          # Container orchestration
 ├── Dockerfile                  # Container build instructions
 ├── README.md                   # This file
-├── libMediaSDK-dev-3.0.1-*/   # MediaSDK package (download separately)
-├── input/                      # Place .insp files here
-├── output/                     # Converted images output here
+├── mediasdk/                   # 📥 PUT MEDIASDK FILES HERE
+│   ├── libMediaSDK-dev_3.0.1-20250418_amd64.deb
+│   ├── libMediaSDK-dev-dbgsym_3.0.1-20250418_amd64.ddeb
+│   └── example/
+│       ├── main.cc
+│       ├── common.h
+│       └── ...
+├── insp-files/                 # 📸 PUT YOUR .insp FILES HERE
+│   ├── photo_001.insp
+│   ├── photo_002.insp
+│   └── ...
+├── panoramas/                  # 🎯 CONVERTED IMAGES OUTPUT HERE
+│   ├── photo_001.jpg
+│   ├── photo_002.jpg
+│   └── ...
 └── examples/                   # Sample scripts and configs
 ```
+
+### 📋 Setup Checklist
+
+- [ ] Clone repository
+- [ ] Download MediaSDK from Insta360 Developer Portal
+- [ ] Extract MediaSDK to `./mediasdk/` folder
+- [ ] Verify `.deb` files and `example/` folder are in `./mediasdk/`
+- [ ] Copy your `.insp` files to `./insp-files/`
+- [ ] Build Docker container
+- [ ] Run conversion
+- [ ] Check results in `./panoramas/`
 
 ## 🤝 Contributing
 

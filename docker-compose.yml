@@ -1,0 +1,11 @@
+services:
+    insta360-converter:
+        build: .
+        volumes:
+            - ./insp-files:/app/insp-files # Source .insp files
+            - ./panoramas:/app/panoramas # Converted panoramas
+        environment:
+            - DISPLAY=:99
+            - LIBGL_ALWAYS_SOFTWARE=1
+            - MESA_GL_VERSION_OVERRIDE=3.3
+        working_dir: /app
